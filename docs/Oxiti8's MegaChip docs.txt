@@ -1,0 +1,117 @@
+Oxiti8's Better MegaChip documentation
+Version 2
+10/13/2022
+
+This document goes over the MegaChip spec in greater detail than the original
+MegaChip docs included in the MegaChip Devkit. Some slight modifications are made to the spec
+to be more developer friendly while not breaking compatibility for existing roms
+
+Opcodes that are not exclusive to MegaChip are not listed here unless they are modified in some way.
+
+- The information here is subject to change, specifically with some edge cases.
+
+
+THE BASICS:
+
+To implement MegaChip, you must first have a working CHIP-8 and SCHIP 1.1 implementation.
+
+MegaChip assumes the following quirks:
+
+- FX55/FX65 do not increment I (SCHIP style)
+- The shifts 8xy6/8xyE shift Vx and ignore Vy (SCHIP style)
+- BNNN jumps to V0 + NNN (VIP Style)
+- Sprites wrap when offscreen 
+
+
+Here are the features of MegaChip mode once you trigger it:
+
+- 256x192 resolution
+- Index based 32-bit color palettes in ARGB8 format (256 entries total, when a sprite references palette 0 it is drawing a transparent sprite)
+- Drawing is synced to CLS(0xEE), meaning that you only update the screen when CLS is called, and after updating the screen you clear the screen buffer like normal.
+  -- This effectively means that MegaChip programs redraw the whole screen between every update, which is useful because Megachip mode removes the XOR functionality of normal DXYN
+- Sprite Height/Sprite Width values are now used for sprites and override the value of N in DXYN, both values can be anywhere from 0 to 255
+  -- Setting one of the Sprite Height or Sprite Width values to 0 actually sets that value to 256- this is commonly used for background sprites that fill the whole screen
+- the addition of LDHI, which allows you to set Long I to a 24-bit value, allowing you to address 16MB of memory.
+  -- This is essentially just a 24-bit version of XO-CHIP's 16-bit Long I.
+  -- This means that MegaChip roms CANNOT BE 32MB LONG LIKE THE DEVKIT SAYS. YOU CAN ONLY ADDRESS UP TO 16MB OF MEMORY.
+- LDPAL, which Will load 32-bit colors (Represented by 4 bytes in memory) to an internal mchip8 pallete at position 1. 
+  -- Palette color 0 is always black/transparent and cannot be changed.
+- an Alpha/Fade effect for the screen buffer, this is a strange inclusion that affects the whole window, it's never been used and still needs to be tested.
+- MegaChip sprites are Byte per pixel as opposed to bit per pixel- the value of the byte points to which color from the mchip8 palette to use.
+
+
+
+Now, for the main course:
+
+LIST OF UPDATED AND NEW OPCODES:
+
+Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modified in MegaChip. Opcodes with "*" in front of them are undocumented.
+
+0010+  Disable Megachip mode       (MEGAOFF):  This disables MegaChip mode putting the emulator back in standard mode (64x32 resolution, normal DXYN, etc.)
+
+0011+  Enable Megachip mode        (MEGAON):   This enables MegaChip mode, activating all the features listed above.
+ -- NOTE: If you have XO-CHIP implemented in your emulator, you should set your plane to 1 upon enabling MegaChip mode.
+ -- As a general rule don't do any graphics or audio stuff from the XO-CHIP or HYPERCHIP-64 extensions while in MegaChip mode. We don't need more quirk toggles.
+
+01nn+  I=(nn<<16)+nnnn             (LDHI  I,nnnnnn): This works like XO-CHIP's Long I instruction (F000), except the lower byte of the opcode is also used along with the next two bytes. 
+ -- Like F000 in XO-CHIP, this instruction increments the PC by 2.
+ -- In the devkit, the author advises you to always follow this instruction with a NOP so it can be skipped over. However, this prevents you from accessing addresses that happen to equal the same value as opcodes.
+    Therefore, I would advise anyone implementing this to have all the skip instructions that double skip over F000 in XO-CHIP to also double skip over 01nn- This works perfectly fine with all existing MegaChip software
+    and is much more developer friendly.
+
+02nn+  Load NN-colors palette at I (LDPAL I,nn):  This loads a 4 byte color palette located at I in memory into the mchip8 palette nn times. Palette entries are stored sequentially in memory- think of this instruction like Fx65 but with up to 255 colors instead of 16 registers. Does not increment I.
+ -- Color entries are stored in AARRGGBB format (ARGB8). This similar to HyperWaveChip-64's Fn03 instruction, but with the addition of the alpha value in byte 1 and with more palettes.
+
+03nn+  Set Sprite Width to nn      (SPRW  nn): Set the sprite width value to nn.
+
+04nn+  Set Sprite Height to nn     (SPRH  nn): Set the sprite height value to nn.
+
+05nn+  Set screen alpha to nn      (ALPHA nn): Sets the screen's alpha value to nn.
+ -- This one assembles properly but doesn't actually do anything. Feel free to stub it out as it's basically a NOP.
+
+060n+  Play digitized sound at I   (DIGISND): Plays "mono 8-bit" audio (8 channels???) on loop
+ -- Audio always loops once it starts regardless of the value of n
+ -- This is not affected by the Sound Timer in any way and can only be stopped by 0700
+ -- first two bytes are for the frequency, next 3 bytes is the size
+
+0700+  Stop digitized sound        (STOPSND): Stops the digitized sound.
+
+080n+  Set sprite blend mode 	   (BMODE n) (0=normal,1=25%,2=50%,3=75%,4=additive,5=multiply)
+ -- No roms use this one to my knowledge. Need to look into this one more. Ready4Next/Mega8 has this implemented but not sure if t
+
+*09nn+ Set Collision Color         (CCOL nn): UNDOCUMENTED. Sets The Collision Color to nn.
+ -- Because DXYN always overwrites the pixel in MegaChip and the pixels can be more than one color, a specified color pallette is used for collisions. More info avaliable in the DXYN instruction.
+
+00Bn+  Scroll display n lines up   (SCRU n): Scrolls up 0-15 lines based on the value of n.
+ -- Literally the exact same as XO-CHIP's 00DN instruction
+
+00FE    Disable extended screen mode
+ -- Doesn't work in MegaChip mode
+
+00FF    Enable extended screen mode for full-screen graphics
+ -- Doesn't work in MegaChip mode
+
+DXYN (MegaChip mode) Show sprite from M(I) at coords (VX,VY), VF := collision with CCOL. DO NOT XOR.
+ -- One pixel in DXYN is one byte, with the value of the byte pointing to the mchip8 color palette that should be used to render said color.
+ -- a value of 0 is transparent.
+ -- Set VF to 1 if the following two conditions are met:
+    - The value of the pixel about to be changed is equal to the value of the Collision Color value (set by 09NN, is a value from 0 to 255 as it points to the color palette and does not contain the actual AARRGGBB color)
+    - The value of of the pixel you are about to write to the screen buffer is nonzero
+ -- VF is set BEFORE the pixel is changed, not after.
+ -- N is completely ignored
+ -- This special DXYN is only used for non-character sprites, meaning any sprite located before 0xFF in memory (the font data) should use the normal DXYN behavior and not the MegaChip DXYN.
+ -- The original MegaChip emulator always uses the color white when rendering the built in font, however going forward it should be expected to be always be rendered using the color in palette 1 for consistency.
+ -- The bottom of the screen actually starts wrapping at row 256, not row 192.
+
+
+WEIRD STUFF:
+
+- F0nn is listed as an opcode that sets I to a 28-bit address in the devkit- this seems to be a mistake as it's unused, eats the entire Fxxx range, and seems like an early version of 01nn- don't implement it
+- The resolution changing opcodes (00FE and 00FF) don't work properly in MegaChip mode. Don't use them in MegaChip mode.
+- A lot of the MegaChip extension additions (Sprite Blending, window transparency (even though this one doesn't even work), digitized audio) seem to be based on SDL functions suggesting that the original MegaChip emulator likely uses SDL 1.x of some kind
+- Small font is always drawn in the color white regardless of palette - my recommendation is to use the color from color value 1 in the palette going forward.
+
+Sources:
+
+MEGA-CHIP8 v1.0b, by: Martijn Wenting / Revival Studios devkit
+https://github.com/Ready4Next/Mega8, this one was basically the only source on CCOL 

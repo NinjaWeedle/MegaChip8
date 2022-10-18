@@ -1,0 +1,94 @@
+# Megachip Font test by Oxiti8
+# This is a MegaChip version of the Octo demo default.8o, combined with a font render test
+# tests the "non-character" font rendering
+
+: main
+clear 
+0x00 0x11 # Enable Megachip mode
+0x03 0x08 # Set sprite width to 8
+0x04 0x09 # Set sprite height to 9
+i := colors
+0x02 0x05 # Load 5 color palette at NN
+v6 := random 0b0111111
+v7 := random 0b0001111
+i := person
+sprite v6 v7 0
+  loop
+    # erase the screen, update player position and then redraw:
+    clear
+    v8 := 5 if v8 key then v7 += -1
+    v8 := 8 if v8 key then v7 +=  1
+    v8 := 7 if v8 key then v6 += -1
+    v8 := 9 if v8 key then v6 +=  1
+		i := person
+    sprite v6 v7 8
+			
+			v1 := 180 # render big SCHIP font for X pos
+			v2 := 0
+			i := hundreds
+			bcd v6
+			load v0
+			i := bighex v0
+			sprite v1 v2 10
+			i := tens
+			v1 += 10
+			load v0
+			i := bighex v0
+			sprite v1 v2 10
+			v1 += 10
+			i := ones
+			load v0
+			i := bighex v0
+			sprite v1 v2 10
+
+			v1 := 180 # render small font for Y pos
+			v2 := 20
+			i := hundreds
+			bcd v7
+			load v0
+			i := hex v0
+			sprite v1 v2 5
+			v1 += 5
+			i := tens
+			load v0
+			i := hex v0
+			sprite v1 v2 5
+			v1 += 5
+			i := ones
+			load v0
+			i := hex v0
+			sprite v1 v2 5
+
+    # lock the framerate of this program via the delay timer:
+    loop
+      vf := delay
+      if vf != 0 then
+    again
+    vf := 3
+    delay := vf
+  again
+
+
+
+: hundreds 0
+: tens     0
+: ones     0
+
+: person
+  0x00 0x00 0x00 0x04 0x04 0x00 0x00 0x00
+	0x00 0x00 0x00 0x04 0x04 0x00 0x00 0x00
+	0x00 0x00 0x03 0x03 0x03 0x03 0x00 0x00
+	0x01 0x01 0x03 0x03 0x03 0x03 0x01 0x01
+	0x01 0x00 0x03 0x03 0x03 0x03 0x00 0x01
+	0x04 0x00 0x02 0x02 0x02 0x02 0x00 0x04
+	0x00 0x00 0x02 0x00 0x00 0x02 0x00 0x00
+	0x00 0x00 0x02 0x00 0x00 0x02 0x00 0x00
+	0x00 0x00 0x05 0x05 0x00 0x05 0x05 0x00
+	
+	
+: colors
+0xFF 0xFF 0x00 0x00 # Red
+0xFF 0x00 0xFF 0x00 # Blue
+0xFF 0x00 0x00 0xFF # Green
+0xFF 0xFF 0xFF 0x00 # Yellow
+0xFF 0x7A 0x3D 0x00 # Brown
