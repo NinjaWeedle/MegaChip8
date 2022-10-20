@@ -1,5 +1,5 @@
 Oxiti8's Better MegaChip documentation
-Version 4
+Version 5
 10/20/2022
 
 This document goes over the MegaChip spec in greater detail than the original
@@ -28,14 +28,14 @@ Here are the features of MegaChip mode once you trigger it:
 - 256x192 resolution
 - Index based 32-bit color palettes in ARGB8 format (256 entries total, when a sprite references palette 0 it is drawing a transparent sprite)
 - Drawing is synced to CLS(0xEE), meaning that you immediately update the screen when CLS is called, and after updating the screen you clear the screen buffer like normal.
-  -- Screen updates should still occur as normal, this just means that CLS can force an immediate screen update upon being called.
+  -- Fx0A also forces the screen to update upon being called just like CLS but does not clear the screen afterwards.
   -- This effectively means that MegaChip programs tend to redraw the whole screen between every update, which is useful because Megachip mode removes the XOR functionality of normal DXYN.
 - Sprite Height/Sprite Width values are now used for sprites and override the value of N in DXYN, both values can be anywhere from 0 to 255
   -- Setting one of the Sprite Height or Sprite Width values to 0 actually sets that value to 256- this is commonly used for background sprites that fill the whole screen
 - the addition of LDHI, which allows you to set Long I to a 24-bit value, allowing you to address 16MB of memory.
   -- This is essentially just a 24-bit version of XO-CHIP's 16-bit Long I.
   -- This means that MegaChip roms CANNOT BE 32MB LONG LIKE THE DEVKIT SAYS. YOU CAN ONLY ADDRESS UP TO 16MB OF MEMORY.
-- LDPAL, which Will load 32-bit colors (Represented by 4 bytes in memory) to an internal mchip8 pallete at position 1. 
+- LDPAL, which Will load 32-bit colors (Represented by 4 bytes in memory) to an internal mchip8 pallete starting at position 1. 
   -- Palette color 0 is always black/transparent and cannot be changed.
 - an Alpha/Fade effect for the screen buffer, this is a strange inclusion that affects the whole window, it's never been used and still needs to be tested.
 - MegaChip sprites are Byte per pixel as opposed to bit per pixel- the value of the byte points to which color from the mchip8 palette to use.
