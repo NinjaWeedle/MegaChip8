@@ -1,6 +1,6 @@
 Oxiti8's Better MegaChip documentation
 Version 5
-10/20/2022
+10/26/2022
 
 This document goes over the MegaChip spec in greater detail than the original
 MegaChip docs included in the MegaChip Devkit. Some slight modifications are made to the spec
@@ -41,9 +41,9 @@ Here are the features of MegaChip mode once you trigger it:
 - MegaChip sprites are Byte per pixel as opposed to bit per pixel- the value of the byte points to which color from the mchip8 palette to use.
 - An increased speed of over "1000 Cycles per tick" - the exact speed is unclear (From the devkit it seems like even Revival Studios didn't know what speed their emulator ran at in MegaChip mode)
 
-
-
 Now, for the main course:
+
+
 
 LIST OF UPDATED AND NEW OPCODES:
 
@@ -73,7 +73,7 @@ Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modifie
  -- This one assembles properly but doesn't actually do anything. Feel free to stub it out as it's basically a NOP.
 
 060n+  Play digitized sound at I   (DIGISND): Plays mono 8-bit audio on loop
- -- Audio always loops once it starts regardless of the value of n
+ -- Audio always loops once it starts regardless of the value of n in MEGA-CHIP8
  -- This is not affected by the Sound Timer in any way and can only be stopped by 0700
  -- The first 8 bytes of the audio data are info about the audio that is going to be played (explained below), the rest being the actual audio data which gets loaded into the audio buffer
  -- The first two bytes of the audio data are the sample rate, the next 3 bytes are the size, which are then followed by a 0x00.
@@ -81,10 +81,9 @@ Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modifie
 0700+  Stop digitized sound        (STOPSND): Stops playback of the digitized sound.
 
 080n+  Set sprite blend mode 	   (BMODE n) (0=normal,1=25%,2=50%,3=75%,4=additive,5=multiply)
- -- No roms use this one to my knowledge. Need to look into this one more. Ready4Next/Mega8 has this implemented but not sure if it's correct
 
 *09nn+ Set Collision Color         (CCOL nn): UNDOCUMENTED. Sets The Collision Color to nn.
- -- Because DXYN always overwrites the pixel in MegaChip and the pixels can be more than one color, a specified color pallette is used for collisions. More info avaliable in the DXYN instruction.
+ -- Because DXYN always overwrites the pixel in MegaChip and the pixels can be more than one color, a specified color palette is used for collisions. More info avaliable in the DXYN instruction.
 
 00Bn+  Scroll display n lines up   (SCRU n): Scrolls up 0-15 lines based on the value of n.
  -- Literally the exact same as XO-CHIP's 00DN instruction
@@ -108,15 +107,26 @@ DXYN (MegaChip mode) Show sprite from M(I) at coords (VX,VY), VF := collision wi
  -- The bottom of the screen actually starts wrapping at row 256, not row 192.
 
 
+
 WEIRD STUFF:
 
 - F0nn is listed as an opcode that sets I to a 28-bit address in the devkit- this seems to be a mistake as it's unused, eats the entire Fxxx range, and seems like an early version of 01nn- don't implement it
 - The resolution changing opcodes (00FE and 00FF) don't work properly in MegaChip mode. Don't use them in MegaChip mode.
 - A lot of the MegaChip extension additions (Sprite Blending, window transparency (even though this one doesn't even work), digitized audio) seem to be based on SDL functions suggesting that the original MegaChip emulator likely uses SDL 1.x of some kind
 - Small font is always drawn in the color white regardless of palette - my recommendation is to use the color from color value 1 in the palette going forward.
-- MegaChip does not support 8x16 sprites in lores mode when n is 0, instead it does not render the sprite at all (VIP style). This doesn't apply to Megachip mode due to it using a different DXYN.
+- MEGA-CHIP8 does not support 8x16 sprites in lores mode when n is 0, instead it does not render the sprite at all (VIP style). This doesn't apply to Megachip mode due to it using a different DXYN.
 
-Sources:
+
+DIFFERENCES BETWEEN READY4NEXT'S MEGA8 AND THE ORIGINAL MEGA-CHIP8:
+
+- Fx0A does not update the screen
+- Only scrolls the contents of the screen and not the buffer yet updates the display with the contents of the buffer at the same time? (MEGA-CHIP8 updates the buffer but not the screen)
+- 060N functions akin to how it is written in the devkit, with n=0 causing audio to loop forever and n=1 making it play only once.
+- The screenb 
+
+
+SOURCES:
 
 MEGA-CHIP8 v1.0b, by: Martijn Wenting / Revival Studios devkit
 https://github.com/Ready4Next/Mega8, this one was basically the only source on CCOL 
+https://web.archive.org/web/20150119201500/http://www.ready4next.be/section-2/article-15/24-09-2014-Mega-Chip-8-/
