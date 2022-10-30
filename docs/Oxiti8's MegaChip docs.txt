@@ -1,9 +1,9 @@
 Oxiti8's Better MegaChip documentation
-Version 5
-10/26/2022
+Version 6
+10/30/2022
 
 This document goes over the MegaChip spec in greater detail than the original
-MegaChip docs included in the MegaChip Devkit. Some slight modifications are made to the spec
+MegaChip docs included in the RS-M8001 MegaChip devkit. Some slight modifications are made to the spec
 to be more developer friendly while not breaking compatibility for existing roms.
 
 Opcodes that are not exclusive to MegaChip are not listed here unless they are modified in some way.
@@ -81,6 +81,7 @@ Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modifie
 0700+  Stop digitized sound        (STOPSND): Stops playback of the digitized sound.
 
 080n+  Set sprite blend mode 	   (BMODE n) (0=normal,1=25%,2=50%,3=75%,4=additive,5=multiply)
+ -- MEGA-CHIP8 actually just ignores blend modes. Only Ready4Next's Mega8 actually implements this in some form.
 
 *09nn+ Set Collision Color         (CCOL nn): UNDOCUMENTED. Sets The Collision Color to nn.
  -- Because DXYN always overwrites the pixel in MegaChip and the pixels can be more than one color, a specified color palette is used for collisions. More info avaliable in the DXYN instruction.
@@ -96,7 +97,7 @@ Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modifie
 
 DXYN (MegaChip mode) Show sprite from M(I) at coords (VX,VY), VF := collision with CCOL. DO NOT XOR.
  -- One pixel in DXYN is one byte, with the value of the byte pointing to the mchip8 color palette that should be used to render said color.
- -- a value of 0 is transparent.
+ -- A value of 0 points to color 0 and thus is transparent.
  -- Set VF to 1 if the following two conditions are met:
     - The value of the pixel about to be changed is equal to the value of the Collision Color value (set by 09NN, is a value from 0 to 255 as it points to the color palette and does not contain the actual AARRGGBB color)
     - The value of of the pixel you are about to write to the screen buffer is nonzero
@@ -114,15 +115,17 @@ WEIRD STUFF:
 - The resolution changing opcodes (00FE and 00FF) don't work properly in MegaChip mode. Don't use them in MegaChip mode.
 - A lot of the MegaChip extension additions (Sprite Blending, window transparency (even though this one doesn't even work), digitized audio) seem to be based on SDL functions suggesting that the original MegaChip emulator likely uses SDL 1.x of some kind
 - Small font is always drawn in the color white regardless of palette - my recommendation is to use the color from color value 1 in the palette going forward.
-- MEGA-CHIP8 does not support 8x16 sprites in lores mode when n is 0, instead it does not render the sprite at all (VIP style). This doesn't apply to Megachip mode due to it using a different DXYN.
+- MEGA-CHIP8 does not support 8x16 sprites in lores mode when n = 0, instead it does not render the sprite at all (VIP style). This doesn't apply to Megachip mode due to it using a different DXYN.
+- MEGA-CHIP8 seems to have some sort of issue with memory- it crashes upon loading very large ROMs (Ex. the 5MB Mega8 demo rom) and seems to put garbage data in RAM at random- not much is known on what exactly is the issue here.
 
 
 DIFFERENCES BETWEEN READY4NEXT'S MEGA8 AND THE ORIGINAL MEGA-CHIP8:
 
 - Fx0A does not update the screen
-- Only scrolls the contents of the screen and not the buffer yet updates the display with the contents of the buffer at the same time? (MEGA-CHIP8 updates the buffer but not the screen)
-- 060N functions akin to how it is written in the devkit, with n=0 causing audio to loop forever and n=1 making it play only once.
-- The screenb 
+- Sprite blend modes are actually implemented
+- Scroll insructions only scrolls the contents of the screen and not the buffer yet updates the display with the contents of the buffer at the same time? (MEGA-CHIP8 updates the buffer but not the screen when scrolling)
+- 060N functions akin to how it is written in the devkit, with n = 0 causing audio to loop forever and n = 1 making it play only once.
+- Mega8 can only draw sprites with widths in multiples of 8 if they are above 8 pixels in width- anything above that seems to get cut off at the last multiple of 8.
 
 
 SOURCES:
