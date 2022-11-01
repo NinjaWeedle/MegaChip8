@@ -1,6 +1,6 @@
 Oxiti8's Better MegaChip documentation
-Version 6
-10/30/2022
+Version 7 - Halloween edition
+10/31/2022
 
 This document goes over the MegaChip spec in greater detail than the original
 MegaChip docs included in the RS-M8001 MegaChip devkit. Some slight modifications are made to the spec
@@ -26,7 +26,7 @@ MegaChip assumes the following quirks:
 Here are the features of MegaChip mode once you trigger it:
 
 - 256x192 resolution
-- Index based 32-bit color palettes in ARGB8 format (256 entries total, when a sprite references palette 0 it is drawing a transparent sprite)
+- Index based 32-bit color palettes in ARGB8 format (255 entries total, when a sprite references palette 0 or 255 it is drawing a transparent pixel)
 - Drawing is synced to CLS(0xEE), meaning that you immediately update the screen when CLS is called, and after updating the screen you clear the screen buffer like normal.
   -- Fx0A also forces the screen to update upon being called just like CLS but does not clear the screen afterwards.
   -- This effectively means that MegaChip programs tend to redraw the whole screen between every update, which is useful because Megachip mode removes the XOR functionality of normal DXYN.
@@ -36,7 +36,7 @@ Here are the features of MegaChip mode once you trigger it:
   -- This is essentially just a 24-bit version of XO-CHIP's 16-bit Long I.
   -- This means that MegaChip roms CANNOT BE 32MB LONG LIKE THE DEVKIT SAYS. YOU CAN ONLY ADDRESS UP TO 16MB OF MEMORY.
 - LDPAL, which Will load 32-bit colors (Represented by 4 bytes in memory) to an internal mchip8 pallete starting at position 1. 
-  -- Palette color 0 is always black/transparent and cannot be changed.
+  -- Palette colors 0 and 255 are always black/transparent and cannot be changed.
 - an Alpha/Fade effect for the screen buffer, this is a strange inclusion that affects the whole window, it's never been used and still needs to be tested.
 - MegaChip sprites are Byte per pixel as opposed to bit per pixel- the value of the byte points to which color from the mchip8 palette to use.
 - An increased speed of over "1000 Cycles per tick" - the exact speed is unclear (From the devkit it seems like even Revival Studios didn't know what speed their emulator ran at in MegaChip mode)
@@ -50,7 +50,7 @@ LIST OF UPDATED AND NEW OPCODES:
 Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modified in MegaChip. Opcodes with "*" in front of them are undocumented.
 
 0010+  Disable Megachip mode       (MEGAOFF):  This disables MegaChip mode putting the emulator back in standard mode (64x32 resolution, normal DXYN, etc.)
- -- This instruction is bugged on the original MegaChip
+ -- This instruction has some issues on the original MEGA-CHIP8 but still does switch to lores
 
 0011+  Enable Megachip mode        (MEGAON):   This enables MegaChip mode, activating all the features listed above.
  -- NOTE: If you have XO-CHIP implemented in your emulator, you should set your plane to 1 upon enabling MegaChip mode.
@@ -85,6 +85,7 @@ Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modifie
 
 *09nn+ Set Collision Color         (CCOL nn): UNDOCUMENTED. Sets The Collision Color to nn.
  -- Because DXYN always overwrites the pixel in MegaChip and the pixels can be more than one color, a specified color palette is used for collisions. More info avaliable in the DXYN instruction.
+ -- The default value of the collision color is 0xFF
 
 00Bn+  Scroll display n lines up   (SCRU n): Scrolls up 0-15 lines based on the value of n.
  -- Literally the exact same as XO-CHIP's 00DN instruction
@@ -113,10 +114,10 @@ WEIRD STUFF:
 
 - F0nn is listed as an opcode that sets I to a 28-bit address in the devkit- this seems to be a mistake as it's unused, eats the entire Fxxx range, and seems like an early version of 01nn- don't implement it
 - The resolution changing opcodes (00FE and 00FF) don't work properly in MegaChip mode. Don't use them in MegaChip mode.
-- A lot of the MegaChip extension additions (Sprite Blending, window transparency (even though this one doesn't even work), digitized audio) seem to be based on SDL functions suggesting that the original MegaChip emulator likely uses SDL 1.x of some kind
 - Small font is always drawn in the color white regardless of palette - my recommendation is to use the color from color value 1 in the palette going forward.
 - MEGA-CHIP8 does not support 8x16 sprites in lores mode when n = 0, instead it does not render the sprite at all (VIP style). This doesn't apply to Megachip mode due to it using a different DXYN.
-- MEGA-CHIP8 seems to have some sort of issue with memory- it crashes upon loading very large ROMs (Ex. the 5MB Mega8 demo rom) and seems to put garbage data in RAM at random- not much is known on what exactly is the issue here.
+- MEGA-CHIP8 does not actually emulate the first 512 bytes of RAM (instead, sprite draws when I is below 0x100 are done separately from everything else), and only allows addressing up to 1MB of RAM.
+- Item 255 in the color palette is always set to 0x00FFFFFF (Transparent), and like item 0 it cannot be overwritten.
 
 
 DIFFERENCES BETWEEN READY4NEXT'S MEGA8 AND THE ORIGINAL MEGA-CHIP8:
@@ -126,6 +127,8 @@ DIFFERENCES BETWEEN READY4NEXT'S MEGA8 AND THE ORIGINAL MEGA-CHIP8:
 - Scroll insructions only scrolls the contents of the screen and not the buffer yet updates the display with the contents of the buffer at the same time? (MEGA-CHIP8 updates the buffer but not the screen when scrolling)
 - 060N functions akin to how it is written in the devkit, with n = 0 causing audio to loop forever and n = 1 making it play only once.
 - Mega8 can only draw sprites with widths in multiples of 8 if they are above 8 pixels in width- anything above that seems to get cut off at the last multiple of 8.
+- Built-in font does not work in MegaChip mode
+- up to 16MB of usable memory rather than 1MB
 
 
 SOURCES:
