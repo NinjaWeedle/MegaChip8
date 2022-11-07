@@ -1,6 +1,6 @@
 Oxiti8's Better MegaChip documentation
-Version 7 - Halloween edition
-10/31/2022
+Version 8
+11/1/2022
 
 This document goes over the MegaChip spec in greater detail than the original
 MegaChip docs included in the RS-M8001 MegaChip devkit. Some slight modifications are made to the spec
@@ -20,13 +20,12 @@ MegaChip assumes the following quirks:
 - FX55/FX65 do not increment I (SCHIP style)
 - The shifts 8xy6/8xyE shift Vx and ignore Vy (SCHIP style)
 - BNNN jumps to V0 + NNN (VIP Style)
-- Sprites wrap when offscreen and clip when not fully offscreen
 
 
 Here are the features of MegaChip mode once you trigger it:
 
 - 256x192 resolution
-- Index based 32-bit color palettes in ARGB8 format (255 entries total, when a sprite references palette 0 or 255 it is drawing a transparent pixel)
+- Index based 32-bit color palettes in ARGB8 format (256 entries total including palette 0, when a sprite references palette 0 or 255 it is drawing a transparent pixel)
 - Drawing is synced to CLS(0xEE), meaning that you immediately update the screen when CLS is called, and after updating the screen you clear the screen buffer like normal.
   -- Fx0A also forces the screen to update upon being called just like CLS but does not clear the screen afterwards.
   -- This effectively means that MegaChip programs tend to redraw the whole screen between every update, which is useful because Megachip mode removes the XOR functionality of normal DXYN.
@@ -37,8 +36,8 @@ Here are the features of MegaChip mode once you trigger it:
   -- This means that MegaChip roms CANNOT BE 32MB LONG LIKE THE DEVKIT SAYS. YOU CAN ONLY ADDRESS UP TO 16MB OF MEMORY.
 - LDPAL, which Will load 32-bit colors (Represented by 4 bytes in memory) to an internal mchip8 pallete starting at position 1. 
   -- Palette colors 0 and 255 are always black/transparent and cannot be changed.
-- an Alpha/Fade effect for the screen buffer, this is a strange inclusion that affects the whole window, it's never been used and still needs to be tested.
-- MegaChip sprites are Byte per pixel as opposed to bit per pixel- the value of the byte points to which color from the mchip8 palette to use.
+- An Alpha/Fade effect for the screen buffer- although this has never been implemented in any capacity in either MEGA-CHIP8 or any known MegaChip emuator
+- MegaChip sprites are byte per pixel as opposed to bit per pixel- the value of the byte points to which color from the mchip8 palette to use.
 - An increased speed of over "1000 Cycles per tick" - the exact speed is unclear (From the devkit it seems like even Revival Studios didn't know what speed their emulator ran at in MegaChip mode)
 
 Now, for the main course:
@@ -71,17 +70,19 @@ Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modifie
 
 05nn+  Set screen alpha to nn      (ALPHA nn): Sets the screen's alpha value to nn.
  -- This one assembles properly but doesn't actually do anything. Feel free to stub it out as it's basically a NOP.
+ -- MEGA-CHIP8 stores the value of nn to some variable with a starting value of 0xFF, but this variable is never used.
 
 060n+  Play digitized sound at I   (DIGISND): Plays mono 8-bit audio on loop
  -- Audio always loops once it starts regardless of the value of n in MEGA-CHIP8
  -- This is not affected by the Sound Timer in any way and can only be stopped by 0700
  -- The first 8 bytes of the audio data are info about the audio that is going to be played (explained below), the rest being the actual audio data which gets loaded into the audio buffer
  -- The first two bytes of the audio data are the sample rate, the next 3 bytes are the size, which are then followed by a 0x00.
+ -- MEGA-CHIP8 ignores n, Mega8 loops audio playback if n=0 and plays it only once if n=1
 
 0700+  Stop digitized sound        (STOPSND): Stops playback of the digitized sound.
 
 080n+  Set sprite blend mode 	   (BMODE n) (0=normal,1=25%,2=50%,3=75%,4=additive,5=multiply)
- -- MEGA-CHIP8 actually just ignores blend modes. Only Ready4Next's Mega8 actually implements this in some form.
+ -- MEGA-CHIP8 actually just ignores blend modes (but does store the value of n in an otherwise unused variable). Only Ready4Next's Mega8 actually implements this in some form.
 
 *09nn+ Set Collision Color         (CCOL nn): UNDOCUMENTED. Sets The Collision Color to nn.
  -- Because DXYN always overwrites the pixel in MegaChip and the pixels can be more than one color, a specified color palette is used for collisions. More info avaliable in the DXYN instruction.
@@ -106,7 +107,7 @@ DXYN (MegaChip mode) Show sprite from M(I) at coords (VX,VY), VF := collision wi
  -- N is completely ignored
  -- This special DXYN is only used for non-character sprites, meaning any sprite located before 0xFF in memory (the font data) should use the normal DXYN behavior and not the MegaChip DXYN.
  -- The original MegaChip emulator always uses the color white when rendering the built in font, however going forward it should be expected to be always be rendered using the color in palette 1 for consistency.
- -- The bottom of the screen actually starts wrapping at row 256, not row 192.
+ -- The bottom of the screen actually starts wrapping at row 256, not row 192. This is because MegaChip just expects the 8-bit values in Vx and Vy to underflow to 255 or overflow back to 0 and thus doesn't bother wrapping on either the X or Y axis.
 
 
 
@@ -115,9 +116,10 @@ WEIRD STUFF:
 - F0nn is listed as an opcode that sets I to a 28-bit address in the devkit- this seems to be a mistake as it's unused, eats the entire Fxxx range, and seems like an early version of 01nn- don't implement it
 - The resolution changing opcodes (00FE and 00FF) don't work properly in MegaChip mode. Don't use them in MegaChip mode.
 - Small font is always drawn in the color white regardless of palette - my recommendation is to use the color from color value 1 in the palette going forward.
-- MEGA-CHIP8 does not support 8x16 sprites in lores mode when n = 0, instead it does not render the sprite at all (VIP style). This doesn't apply to Megachip mode due to it using a different DXYN.
-- MEGA-CHIP8 does not actually emulate the first 512 bytes of RAM (instead, sprite draws when I is below 0x100 are done separately from everything else), and only allows addressing up to 1MB of RAM.
+- MEGA-CHIP8 does not support 8x16 sprites in lores mode when n = 0, instead it does not render the sprite at all (VIP style). This doesn't apply to Megachip mode due to it using a different DXYN that ignores n.
+- MEGA-CHIP8 does not actually emulate the first 512 bytes of RAM (instead, sprite draws when I is below 0x100 are done separately from everything else), and only allows addressing up to 1MB of RAM (0xFFFFF) instead of the intended 16MB (0xFFFFFF).
 - Item 255 in the color palette is always set to 0x00FFFFFF (Transparent), and like item 0 it cannot be overwritten.
+- MEGA-CHIP8's timers actually tick at 50hz for some reason, no matter if it is in Megachip mode or not. (This isn't mentioned in the devkit and thus timers should still tick at 60hz going forwards.)
 
 
 DIFFERENCES BETWEEN READY4NEXT'S MEGA8 AND THE ORIGINAL MEGA-CHIP8:
@@ -128,7 +130,7 @@ DIFFERENCES BETWEEN READY4NEXT'S MEGA8 AND THE ORIGINAL MEGA-CHIP8:
 - 060N functions akin to how it is written in the devkit, with n = 0 causing audio to loop forever and n = 1 making it play only once.
 - Mega8 can only draw sprites with widths in multiples of 8 if they are above 8 pixels in width- anything above that seems to get cut off at the last multiple of 8.
 - Built-in font does not work in MegaChip mode
-- up to 16MB of usable memory rather than 1MB
+- Up to 16MB of usable memory rather than 1MB
 
 
 SOURCES:
