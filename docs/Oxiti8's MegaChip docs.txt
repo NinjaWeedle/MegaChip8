@@ -1,6 +1,6 @@
 Oxiti8's Better MegaChip documentation
-Version 8
-11/1/2022
+Version 9
+09/12/2024
 
 This document goes over the MegaChip spec in greater detail than the original
 MegaChip docs included in the RS-M8001 MegaChip devkit. Some slight modifications are made to the spec
@@ -57,9 +57,8 @@ Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modifie
 
 01nn+  I=(nn<<16)+nnnn             (LDHI  I,nnnnnn): This works like XO-CHIP's Long I instruction (F000), except the lower byte of the opcode is also used along with the next two bytes. 
  -- Like F000 in XO-CHIP, this instruction increments the PC by 2.
- -- In the devkit, the author advises you to always follow this instruction with a NOP so it can be skipped over. However, this prevents you from accessing addresses that happen to equal the same value as opcodes.
-    Therefore, I would advise anyone implementing this to have all the skip instructions that double skip over F000 in XO-CHIP to also double skip over 01nn- This works perfectly fine with all existing MegaChip software
-    and is much more developer friendly.
+ -- In the devkit, the author advises you to always follow this instruction with a NOP so it can be skipped over. This is simply to give the modified Chipper assembler included in the devkit room to put the address and does not actually mean LDHI should be treated like a 2 byte instruction when skips are involved.
+    Therefore, I would advise anyone implementing this to have all the skip instructions that double skip over F000 in XO-CHIP to also double skip over 01nn- This works perfectly fine with all existing MegaChip software.
 
 02nn+  Load NN-colors palette at I (LDPAL I,nn):  This loads a 4 byte color palette located at I in memory into the mchip8 palette nn times. Palette entries are stored sequentially in memory- think of this instruction like Fx65 but with up to 255 colors instead of 16 registers. Does not increment I.
  -- Color entries are stored in AARRGGBB format (ARGB8). This similar to HyperWaveChip-64's Fn03 instruction, but with the addition of the alpha value in byte 1 and with more palettes.
