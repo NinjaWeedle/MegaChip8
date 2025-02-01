@@ -1,6 +1,6 @@
 Oxiti8's Better MegaChip documentation
-Version 9
-09/12/2024
+Version 10
+02/01/2025
 
 This document goes over the MegaChip spec in greater detail than the original
 MegaChip docs included in the RS-M8001 MegaChip devkit. Some slight modifications are made to the spec
@@ -105,7 +105,7 @@ DXYN (MegaChip mode) Show sprite from M(I) at coords (VX,VY), VF := collision wi
  -- VF is set BEFORE the pixel is changed, not after.
  -- N is completely ignored
  -- This special DXYN is only used for non-character sprites, meaning any sprite located before 0xFF in memory (the font data) should use the normal DXYN behavior and not the MegaChip DXYN.
- -- The original MegaChip emulator always uses the color white when rendering the built in font, however going forward it should be expected to be always be rendered using the color in palette 1 for consistency.
+ -- The original MegaChip emulator always uses the color white when rendering the built in font, however going forward it should be expected to be always be rendered using the color in palette 254 for consistency.
  -- The bottom of the screen actually starts wrapping at row 256, not row 192. This is because MegaChip just expects the 8-bit values in Vx and Vy to underflow to 255 or overflow back to 0 and thus doesn't bother wrapping on either the X or Y axis.
 
 
