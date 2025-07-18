@@ -36,7 +36,6 @@ Here are the features of MegaChip mode once you trigger it:
   -- This means that MegaChip roms CANNOT BE 32MB LONG LIKE THE DEVKIT SAYS. YOU CAN ONLY ADDRESS UP TO 16MB OF MEMORY.
 - LDPAL, which Will load 32-bit colors (Represented by 4 bytes in memory) to an internal mchip8 pallete starting at position 1. 
   -- Palette colors 0 and 255 are always black/transparent and cannot be changed.
-  -- Palette color 254 is always white and cannot be changed.
 - An Alpha/Fade effect for the screen buffer- although this has never been implemented in any capacity in either MEGA-CHIP8 or any known MegaChip emuator
 - MegaChip sprites are byte per pixel as opposed to bit per pixel- the value of the byte points to which color from the mchip8 palette to use.
 - An increased speed of over "1000 Cycles per tick" - the exact speed is unclear (From the devkit it seems like even Revival Studios didn't know what speed their emulator ran at in MegaChip mode)
@@ -115,10 +114,10 @@ WEIRD STUFF:
 
 - F0nn is listed as an opcode that sets I to a 28-bit address in the devkit- this seems to be a mistake as it's unused, eats the entire Fxxx range, and seems like an early version of 01nn- don't implement it
 - The resolution changing opcodes (00FE and 00FF) don't work properly in MegaChip mode. Don't use them in MegaChip mode.
-- Small font is always drawn in the color white regardless of palette - my recommendation is to use the color from color value 1 in the palette going forward.
+- Small font is always drawn in the color white regardless of palette - my recommendation is to use the color from color value 254 in the palette going forward.
 - MEGA-CHIP8 does not support 8x16 sprites in lores mode when n = 0, instead it does not render the sprite at all (VIP style). This doesn't apply to Megachip mode due to it using a different DXYN that ignores n.
 - MEGA-CHIP8 does not actually emulate the first 512 bytes of RAM (instead, sprite draws when I is below 0x100 are done separately from everything else), and only allows addressing up to 1MB of RAM (0xFFFFF) instead of the intended 16MB (0xFFFFFF).
-- Item 255 in the color palette is always set to 0x00FFFFFF (Transparent) and item 254 is always set to white (0xFFFFFF), and like item 0 they cannot be overwritten.
+- Item 255 in the color palette is always set to 0x00FFFFFF (Transparent), and like item 0 it cannot be overwritten.
 - MEGA-CHIP8's timers actually tick at 50hz for some reason, no matter if it is in Megachip mode or not. (This isn't mentioned in the devkit and thus timers should still tick at 60hz going forwards.)
 
 
