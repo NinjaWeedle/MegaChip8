@@ -1,6 +1,6 @@
 Oxiti8's Better MegaChip documentation
-Version 10
-02/01/2025
+Version 11
+09/22/2025
 
 This document goes over the MegaChip spec in greater detail than the original
 MegaChip docs included in the RS-M8001 MegaChip devkit. Some slight modifications are made to the spec
@@ -26,7 +26,7 @@ Here are the features of MegaChip mode once you trigger it:
 
 - 256x192 resolution
 - Index based 32-bit color palettes in ARGB8 format (256 entries total including palette 0, when a sprite references palette 0 or 255 it is drawing a transparent pixel)
-- Drawing is synced to CLS(0xEE), meaning that you immediately update the screen when CLS is called, and after updating the screen you clear the screen buffer like normal.
+- Drawing is synced to CLS(0xE0), meaning that you immediately update the screen when CLS is called, and after updating the screen you clear the screen buffer like normal.
   -- Fx0A also forces the screen to update upon being called just like CLS but does not clear the screen afterwards.
   -- This effectively means that MegaChip programs tend to redraw the whole screen between every update, which is useful because Megachip mode removes the XOR functionality of normal DXYN.
 - Sprite Height/Sprite Width values are now used for sprites and override the value of N in DXYN, both values can be anywhere from 0 to 255
@@ -90,11 +90,11 @@ Opcodes with "+" next to them are new to MegaChip. Opcodes without + are modifie
 00Bn+  Scroll display n lines up   (SCRU n): Scrolls up 0-15 lines based on the value of n.
  -- Literally the exact same as XO-CHIP's 00DN instruction
 
-00FE    Disable extended screen mode
- -- Doesn't work in MegaChip mode
+00FE    Disable extended screen mode / LORES
+ -- Doesn't work in MegaChip mode (In the original Revival Studios emulator, it technically triggers but doesn't actually resize the screen and instead just makes the part of the buffer which is cleared by CLS smaller (1024 bytes), which just breaks everything and leaves trails...don't do whatever this is, just disable LORES in MegaChip mode.)
 
-00FF    Enable extended screen mode for full-screen graphics
- -- Doesn't work in MegaChip mode
+00FF    Enable extended screen mode for full-screen graphics / HIRES
+ -- Doesn't work in MegaChip mode (Same deal as LORES, it triggers but just makes CLS only affect the first 4096 [64x64] bytes of the buffer. Again, useless.)
 
 DXYN (MegaChip mode) Show sprite from M(I) at coords (VX,VY), VF := collision with CCOL. DO NOT XOR.
  -- One pixel in DXYN is one byte, with the value of the byte pointing to the mchip8 color palette that should be used to render said color.
