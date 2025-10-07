@@ -1,6 +1,6 @@
 Oxiti8's Better MegaChip documentation
-Version 11
-09/22/2025
+Version 12
+10/06/2025
 
 This document goes over the MegaChip spec in greater detail than the original
 MegaChip docs included in the RS-M8001 MegaChip devkit. Some slight modifications are made to the spec
@@ -100,9 +100,9 @@ DXYN (MegaChip mode) Show sprite from M(I) at coords (VX,VY), VF := collision wi
  -- One pixel in DXYN is one byte, with the value of the byte pointing to the mchip8 color palette that should be used to render said color.
  -- A value of 0 points to color 0 and thus is transparent.
  -- Set VF to 1 if the following two conditions are met:
-    - The value of the pixel about to be changed is equal to the value of the Collision Color value (set by 09NN, is a value from 0 to 255 as it points to the color palette and does not contain the actual AARRGGBB color)
-    - The value of of the pixel you are about to write to the screen buffer is nonzero
- -- VF is set BEFORE the pixel is changed, not after.
+    - The value of the pixel in the buffer about to be changed is equal to the value of the Collision Color value (Set by 09NN, CCOL is a value from 0 to 255 that points to the color palette and does not contain the actual AARRGGBB color.)
+    - The AARRGGBB value of the pixel you are about to draw is non-zero.
+ -- Remember that the collision test is done BEFORE the pixel is changed, not after.
  -- N is completely ignored
  -- This special DXYN is only used for non-character sprites, meaning any sprite located before 0xFF in memory (the font data) should use the normal DXYN behavior and not the MegaChip DXYN.
  -- The original MegaChip emulator always uses the color white when rendering the built in font, however going forward it should be expected to be always be rendered using the color in palette 254 for consistency.
@@ -125,7 +125,7 @@ DIFFERENCES BETWEEN READY4NEXT'S MEGA8 AND THE ORIGINAL MEGA-CHIP8:
 
 - Fx0A does not update the screen
 - Sprite blend modes are actually implemented
-- Scroll insructions only scrolls the contents of the screen and not the buffer yet updates the display with the contents of the buffer at the same time? (MEGA-CHIP8 updates the buffer but not the screen when scrolling)
+- Scroll insructions only scroll the contents of the screen and not the buffer yet updates the display with the contents of the buffer at the same time? (MEGA-CHIP8 updates the buffer but not the screen when scrolling)
 - 060N functions akin to how it is written in the devkit, with n = 0 causing audio to loop forever and n = 1 making it play only once.
 - Mega8 can only draw sprites with widths in multiples of 8 if they are above 8 pixels in width- anything above that seems to get cut off at the last multiple of 8.
 - Built-in font does not work in MegaChip mode
